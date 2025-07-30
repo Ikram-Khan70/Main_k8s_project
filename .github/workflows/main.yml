@@ -1,4 +1,4 @@
-name: CI/CD Pipeline - Build and Push Docker Image
+name: CI/CD Pipeline - Docker + Slack Notification
 
 on:
   push:
@@ -24,3 +24,19 @@ jobs:
 
       - name: Push Docker image
         run: docker push $IMAGE_NAME:latest
+
+  notify-slack:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notify via AWS Lambda
+        run: |
+          curl -X POST "$LAMBDA_FUNCTION_URL" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "message": "✅ Docker image pushed to Docker Hub: '${{ env.IMAGE_NAME }}:latest'"
+          }'
+
+        env:
+          LAMBDA_FUNCTION_URL: ${{ secrets.LAMBDA_FUNCTION_URL }}
